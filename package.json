@@ -18,7 +18,24 @@
         "commands": [{
             "command": "extension.runMarkdownSnippet",
             "title": "Run Snippet in Markdown"
-        }]
+        }],
+        "configuration": {
+            "title": "Markdown Run Snippet Configuration",
+            "properties": {
+                "markdown-run-snippet.typeToExtMap": {
+                    "type": "object",
+                    "default" :{
+                        "rust": "rs"
+                    }
+                },
+                "markdown-run-snippet.typeToTemplateMap": {
+                    "type": "object",
+                    "default" :{
+                        "rust": "fn main() {\n$snippet\n}"
+                    }
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
