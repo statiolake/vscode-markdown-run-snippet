@@ -1,65 +1,74 @@
-# vscode-markdown-run-snippet README
+# vscode-markdown-run-snippet
 
-This is the README for your extension "vscode-markdown-run-snippet". After writing up a brief description, we recommend including the following sections.
+Run snippets in your markdown document.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+* Running code snippet in Markdown file
 
-For example if there is an image subfolder under your extension project workspace:
+## Usages
 
-\!\[feature X\]\(images/feature-x.png\)
+Markdown has syntax for code snippets:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+    ```language
+    your_code.goes_here();
+    ```
+
+1. Select the whole snippet (including the marker: \`\`\`).
+1. Run `Run Snippet in Markdown` from command palette.
+
+This extension automatically open new untitled document. Its content is the
+snippet, filetype is the one specified at just after
+beginning marker (`language` part of beginning marker ` ```language `). Inserted snippet is modified based on language-specific template from the
+original (surrounded by \`\`\`) snippet.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+This extension depends on the following extension:
+
+* [Code Runner](https://github.com/formulahendry/vscode-code-runner)
+
+    Great extension to run opening code snippet. Running the extracted snippet is
+    all done by this extension. Can be installed from MarketPlace.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+* `markdown-run-snippet.mdToVscodeTypeMap`
 
-For example:
+    Example:
 
-This extension contributes the following settings:
+    ```json
+     "markdown-run-snippet.mdToVscodeTypeMap": {
+        "cpp": "C++"
+    }
+    ```
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+    Map from language specified in Markdown to Visual Studio Code's filetype.
+    If there is no entry, the same string is used as Visual Studio Code's filetype.
+
+* `markdown-run-snippet.mdTypeToTemplateMap`
+
+    Example:
+
+    ```json
+    "markdown-run-snippet.mdTypeToTemplateMap": {
+        "rust": "fn main() {\n    $snippet\n}"
+    }
+    ```
+
+    Map from language specified in Markdown to template (that will be applied to
+    the snippet). Template feature is useful for importing common modules,
+    including common headers, defining main() function. selected snippet will be
+    placed at the position of `$snippet`. The leading ' '(whitespace) before
+    `$snippet` is important, because the same amount of ' ' will be prepended to
+    all lines of selected snippet.
+
+Configurations defined by default are very very few.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release
