@@ -4,6 +4,7 @@
 
 - Change displayName / description
 - Add GIF animation to README
+- Support snippet placed deeper indent
 
 ## 0.1.1
 

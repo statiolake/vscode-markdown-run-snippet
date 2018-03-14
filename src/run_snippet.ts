@@ -139,10 +139,22 @@ class Content {
     }
 
     static parseSelectedText(eol: string, selectedText: string): Content | string {
+        // preserve indentation
+        const indentMatch = /^(\ *)```/.exec(selectedText);
+
         selectedText = selectedText.trim();
         if (!selectedText.startsWith('```') || !selectedText.endsWith('```')) {
             return 'Selection is not started with ``` or is not ended with ```';
         }
+
+        if (indentMatch === null) {
+            throw new AssertionError({
+                message: "indentMatch is null"
+            });
+        }
+
+        // indent
+        const indent = ' '.repeat(indentMatch[1].length);
 
         // remove markers
         selectedText = selectedText.replace(/^```/, '').replace(/```$/, '');
@@ -161,14 +173,14 @@ class Content {
             // there is filetype but no body, or
             splitted_selectedText.length === 0 ||
             // there is filetype but no line except trailing empty line
-            (lastline === '' && splitted_selectedText.length === 1)
+            (lastline.trim() === '' && splitted_selectedText.length === 1)
         ) {
             // then selected snippet doesn't contain any code to run.
             return 'No code to run.';
         }
 
         // if the last line is not empty, push it again.
-        if (lastline !== '') {
+        if (lastline.trim() !== '') {
             splitted_selectedText.push(lastline);
         }
 
@@ -178,7 +190,13 @@ class Content {
             return 'No filetype detected.';
         }
 
-        let rawSnippet = splitted_selectedText.slice(1).join('\n');
+        let rawSnippet = splitted_selectedText
+            .slice(1)
+            .map((line) => {
+                // remove indent
+                return line.replace(new RegExp("^" + indent), '');
+            })
+            .join('\n');
 
         return new Content(mdType, rawSnippet);
     }
