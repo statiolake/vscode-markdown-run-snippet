@@ -10,27 +10,42 @@
     "categories": [
         "Other"
     ],
+    "keywords": [
+        "markdown"
+    ],
+    "bugs": {
+        "url": "https://github.com/statiolake/vscode-markdown-run-snippet/issues",
+        "email": "statiolake@gmail.com"
+    },
+    "homepage": "https://github.com/statiolake/vscode-markdown-run-snippet/blob/master/README.md",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/statiolake/vscode-markdown-run-snippet.git"
+    },
     "activationEvents": [
         "onCommand:extension.runMarkdownSnippet"
     ],
     "main": "./out/extension",
     "contributes": {
-        "commands": [{
-            "command": "extension.runMarkdownSnippet",
-            "title": "Run Snippet in Markdown"
-        }],
+        "commands": [
+            {
+                "command": "extension.runMarkdownSnippet",
+                "title": "Run Snippet in Markdown",
+                "category": "Markdown"
+            }
+        ],
         "configuration": {
             "title": "Markdown Run Snippet Configuration",
             "properties": {
                 "markdown-run-snippet.mdToVscodeTypeMap": {
                     "type": "object",
-                    "default" :{
+                    "default": {
                         "cpp": "C++"
                     }
                 },
                 "markdown-run-snippet.mdTypeToTemplateMap": {
                     "type": "object",
-                    "default" :{
+                    "default": {
                         "rust": "fn main() {\n    $snippet\n}"
                     }
                 }
