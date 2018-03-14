@@ -40,7 +40,7 @@
                 "markdown-run-snippet.mdToVscodeTypeMap": {
                     "type": "object",
                     "default": {
-                        "cpp": "C++"
+                        "c++": "cpp"
                     }
                 },
                 "markdown-run-snippet.mdTypeToTemplateMap": {
