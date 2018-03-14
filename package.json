@@ -22,16 +22,16 @@
         "configuration": {
             "title": "Markdown Run Snippet Configuration",
             "properties": {
-                "markdown-run-snippet.typeToExtMap": {
+                "markdown-run-snippet.mdToVscodeTypeMap": {
                     "type": "object",
                     "default" :{
-                        "rust": "rs"
+                        "cpp": "C++"
                     }
                 },
-                "markdown-run-snippet.typeToTemplateMap": {
+                "markdown-run-snippet.mdTypeToTemplateMap": {
                     "type": "object",
                     "default" :{
-                        "rust": "fn main() {\n$snippet\n}"
+                        "rust": "fn main() {\n    $snippet\n}"
                     }
                 }
             }
