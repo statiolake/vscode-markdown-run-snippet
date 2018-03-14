@@ -69,6 +69,6 @@ Configurations defined by default are very very few.
 
 ## Release Notes
 
-### 0.0.1
+### 0.1.0
 
 Initial release
