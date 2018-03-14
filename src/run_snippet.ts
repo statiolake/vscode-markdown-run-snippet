@@ -121,7 +121,7 @@ class FinalizedContent {
         template = template.replace(/^\ *\$snippet/m, '$snippet');
 
         // insert indentation
-        const indent = ' '.repeat(indentMatch[1].length);
+        const indent = indentMatch[1];
         const splitted_rawSnippet = content.rawSnippet.split('\n');
         const indentedSnippet = splitted_rawSnippet.map((line) => {
             return indent + line;
@@ -154,7 +154,7 @@ class Content {
         }
 
         // indent
-        const indent = ' '.repeat(indentMatch[1].length);
+        const indent = indentMatch[1];
 
         // remove markers
         selectedText = selectedText.replace(/^```/, '').replace(/```$/, '');
