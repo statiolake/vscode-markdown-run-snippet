@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 - Change displayName / description
+- Add GIF animation to README
+
 ## 0.1.1
 
 - Include some example in README

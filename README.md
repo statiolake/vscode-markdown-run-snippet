@@ -2,6 +2,8 @@
 
 Run snippets in your markdown document.
 
+![How it works](images/run01.gif)
+
 ## Features
 
 * Running code snippet in Markdown file
