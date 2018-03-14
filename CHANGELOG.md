@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Change displayName / description
 ## 0.1.1
 
 - Include some example in README
