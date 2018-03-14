@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0]
+
 - Change displayName / description
 - Add GIF animation to README
 - Support snippet placed deeper indent

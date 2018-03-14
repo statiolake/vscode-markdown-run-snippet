@@ -2,7 +2,7 @@
     "name": "vscode-markdown-run-snippet",
     "displayName": "Run Snippets in Markdown",
     "description": "Run code block inside your markdown file",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "publisher": "statiolake",
     "engines": {
         "vscode": "^1.21.0"
