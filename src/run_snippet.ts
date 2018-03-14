@@ -6,41 +6,42 @@ import { AssertionError } from 'assert';
 
 export function runMarkdownSnippet() {
     // get editor
-    let editor = vscode.window.activeTextEditor;
+    const editor = vscode.window.activeTextEditor;
 
     // get selection
-    let selection = editor !== undefined ? editor.selection : undefined;
-    if (editor === undefined || selection === undefined) {
-        vscode.window.showInformationMessage('No code selected.');
+    const selection = editor !== undefined ? editor.selection : undefined;
+    if (editor === undefined || selection === undefined || selection.isEmpty) {
+        vscode.window.showErrorMessage('No code selected.');
         return;
     }
 
     // get snippet
-    let snippet = editor.document.getText(selection);
-    let eol = getEol(editor.document.eol);
+    const selectedText = editor.document.getText(selection);
+    const eol = getEol(editor.document.eol);
 
-    let content = Content.parseSnippet(eol, snippet);
+    const content = Content.parseSelectedText(eol, selectedText);
     if (isString(content)) /* if error */ {
-        let error = content;
-        vscode.window.showInformationMessage(error);
+        // if string is returned, this represents an error message.
+        vscode.window.showErrorMessage(content);
         return;
     }
 
-    // get current active file's uri; if not a file then show error message and exit
-    let uri = editor.document.uri;
+    // get current active file's uri
+    // unsupported: if not a file, show error message and exit
+    const uri = editor.document.uri;
     if (uri === undefined || uri.scheme !== 'file') {
-        vscode.window.showInformationMessage('Opened file is not placed at the local filesystem.');
+        vscode.window.showErrorMessage('Opened file is not placed at the local filesystem.');
         return;
     }
 
     // get configuration
-    let config = vscode.workspace.getConfiguration('markdown-run-snippet');
-    let finalized = FinalizedContent.finalize(config, eol, content);
+    const config = vscode.workspace.getConfiguration('markdown-run-snippet');
+    const finalized = FinalizedContent.finalize(config, eol, content);
 
     // open it in window as Untitled new file
     // and run it.
     vscode.workspace.openTextDocument({
-        language: finalized.mdType,
+        language: finalized.vscodeType,
         content: finalized.fullSnippet
     }).then((doc) => {
         vscode.window.showTextDocument(doc).then(() => {
@@ -80,26 +81,28 @@ class FinalizedContent {
     }
 
     public static finalize(cfg: vscode.WorkspaceConfiguration, eol: string, content: Content): FinalizedContent {
-        let mdType = content.mdType;
-        let vscodeType = FinalizedContent.mdToVscodeFiletype(cfg, content);
-        let rawSnippet = content.rawSnippet;
-        let fullSnippet = FinalizedContent
+        const mdType = content.mdType;
+        let   vscodeType = FinalizedContent.mdToVscodeFiletype(cfg, content);
+        const rawSnippet = content.rawSnippet;
+        const fullSnippet = FinalizedContent
             .applyTemplate(cfg, content)
             .replace(/\n/g, eol);
 
+        // fallback: unregistered mdType
         if (vscodeType === undefined) {
             vscodeType = content.mdType;
         }
+
         return new FinalizedContent(mdType, vscodeType, rawSnippet, fullSnippet);
     }
 
     private static mdToVscodeFiletype(cfg: vscode.WorkspaceConfiguration, content: Content): string | undefined {
-        let mdToVscodeTypeMap = cfg.get<any>('mdToVscodeTypeMap');
+        const mdToVscodeTypeMap = cfg.get<any>('mdToVscodeTypeMap');
         return mdToVscodeTypeMap[content.mdType];
     }
 
     private static applyTemplate(cfg: vscode.WorkspaceConfiguration, content: Content): string {
-        let mdTypeToTemplateMap = cfg.get<any>('mdTypeToTemplateMap');
+        const mdTypeToTemplateMap = cfg.get<any>('mdTypeToTemplateMap');
         let template = mdTypeToTemplateMap[content.mdType];
         if (template === undefined) {
             return content.rawSnippet;
@@ -108,8 +111,8 @@ class FinalizedContent {
         // detect the depth of indentation
         // The template may contain more than one `$snippet`, but the depth of
         // indentation is based on the first occurrence.
-        let matchIndent = /^(\ *)\$snippet/m.exec(template);
-        if (matchIndent === null) {
+        const indentMatch = /^(\ *)\$snippet/m.exec(template);
+        if (indentMatch === null) {
             // nothing to replace.
             return template;
         }
@@ -118,12 +121,12 @@ class FinalizedContent {
         template = template.replace(/^\ *\$snippet/m, '$snippet');
 
         // insert indentation
-        let indent = ' '.repeat(matchIndent[1].length);
-        let splitted_snippet = content.rawSnippet.split('\n');
-        let rawSnippet = splitted_snippet.map((line) => {
+        const indent = ' '.repeat(indentMatch[1].length);
+        const splitted_rawSnippet = content.rawSnippet.split('\n');
+        const indentedSnippet = splitted_rawSnippet.map((line) => {
             return indent + line;
         }).join('\n');
-        return template.replace(/\$snippet/, rawSnippet);
+        return template.replace(/\$snippet/, indentedSnippet);
     }
 }
 class Content {
@@ -135,19 +138,19 @@ class Content {
         this.rawSnippet = rawSnippet;
     }
 
-    static parseSnippet(eol: string, orig_snippet: string): Content | string {
-        let snippet = orig_snippet.trim();
-        if (!snippet.startsWith('```') || !snippet.endsWith('```')) {
+    static parseSelectedText(eol: string, selectedText: string): Content | string {
+        selectedText = selectedText.trim();
+        if (!selectedText.startsWith('```') || !selectedText.endsWith('```')) {
             return 'Selection is not started with ``` or is not ended with ```';
         }
 
-        // remove marker
-        snippet = snippet.replace(/^```/, '').replace(/```$/, '');
+        // remove markers
+        selectedText = selectedText.replace(/^```/, '').replace(/```$/, '');
 
-        let splitted_snippet = snippet.split(eol);
+        let splitted_selectedText = selectedText.split(eol);
 
         // modify snippet: remove the last line: normally that is empty line.
-        let lastline = splitted_snippet.pop();
+        let lastline = splitted_selectedText.pop();
 
         // when there isn't even filetype line, lastline will be undefined.
         // splitted_snippet must contain snippet body other than type, so it is
@@ -156,9 +159,9 @@ class Content {
         if (// even filetype is not present --- just blank, or
             lastline === undefined ||
             // there is filetype but no body, or
-            splitted_snippet.length === 0 ||
+            splitted_selectedText.length === 0 ||
             // there is filetype but no line except trailing empty line
-            (lastline === '' && splitted_snippet.length === 1)
+            (lastline === '' && splitted_selectedText.length === 1)
         ) {
             // then selected snippet doesn't contain any code to run.
             return 'No code to run.';
@@ -166,16 +169,16 @@ class Content {
 
         // if the last line is not empty, push it again.
         if (lastline !== '') {
-            splitted_snippet.push(lastline);
+            splitted_selectedText.push(lastline);
         }
 
         // parse filetype specified at just after the beginning marker
-        let mdType = splitted_snippet[0];
+        let mdType = splitted_selectedText[0];
         if (mdType === '') {
             return 'No filetype detected.';
         }
 
-        let rawSnippet = splitted_snippet.slice(1).join('\n');
+        let rawSnippet = splitted_selectedText.slice(1).join('\n');
 
         return new Content(mdType, rawSnippet);
     }
