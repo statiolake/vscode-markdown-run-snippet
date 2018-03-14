@@ -35,18 +35,36 @@ This extension depends on the following extension:
 
 * `markdown-run-snippet.mdToVscodeTypeMap`
 
+    Map from language specified in Markdown to Visual Studio Code's filetype.
+    If there is no entry, the same string is used as Visual Studio Code's filetype.
+
     Example:
 
     ```json
      "markdown-run-snippet.mdToVscodeTypeMap": {
-        "cpp": "C++"
+        "c++": "cpp"
     }
     ```
 
-    Map from language specified in Markdown to Visual Studio Code's filetype.
-    If there is no entry, the same string is used as Visual Studio Code's filetype.
+    With the above setting, we can collectly set the filetype to `cpp` for
+    snippet below:
+
+        ```c++
+        std::cout << "hello!" << std::endl;
+        ```
+    
+    Without the above setting, this extension assume the filetype `c++`. However
+    Visual Studio Code can't recognize it, so it fails to run this snippet.
+    
 
 * `markdown-run-snippet.mdTypeToTemplateMap`
+
+    Map from language specified in Markdown to template (that will be applied to
+    the snippet). Template feature is useful for importing common modules,
+    including common headers, defining main() function. selected snippet will be
+    placed at the position of `$snippet`. The leading ' '(whitespace) before
+    `$snippet` is important, because the same amount of ' ' will be prepended to
+    all lines of selected snippet.
 
     Example:
 
@@ -56,14 +74,41 @@ This extension depends on the following extension:
     }
     ```
 
-    Map from language specified in Markdown to template (that will be applied to
-    the snippet). Template feature is useful for importing common modules,
-    including common headers, defining main() function. selected snippet will be
-    placed at the position of `$snippet`. The leading ' '(whitespace) before
-    `$snippet` is important, because the same amount of ' ' will be prepended to
-    all lines of selected snippet.
+    With above setting, we can run snippet below even if we have to define
+    `main()` function in Rust language:
 
-Configurations defined by default are very very few.
+        ```rust
+        let name = "foo";
+        println!("Hello, {}", name);
+        ```
+    
+    The above snippet will be expanded as follows:
+
+    ```rust
+    fn main() {
+        let name = "foo";
+        println!("Hello, {}", name);
+    }
+    ```
+
+    Similary, C++ requires to define `main()` function. Also C++ needs a lot of
+    header files to run. Let's make it template:
+
+    ```json
+    "markdown-run-snippet.mdTypeToTemplateMap": {
+        "rust": "fn main() {\n    $snippet\n}",
+        "c++": "#include <iostream>\n#include <string>\nint main(void) {\n    $snippet\n}"
+    }
+    ```
+
+    Now we can run the snippet below:
+
+        ```c++
+        std::string name = "foo";
+        std::cout << "Hello, " << name << std::endl;
+        ```
+
+Very very few (almost no) configurations are defined by default.
 
 ## Known Issues
 
