@@ -112,8 +112,7 @@ Very very few (almost no) configurations are defined by default.
 
 ## Known Issues
 
-## Release Notes
 
-### 0.1.0
+## Change Log
 
-Initial release
+See Change Log [here](CHANGELOG.md)

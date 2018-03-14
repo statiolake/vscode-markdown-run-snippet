@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 0.1.1
+
 - Include some example in README
 - Fix wrong example configuration for C++
 
