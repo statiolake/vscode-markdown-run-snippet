@@ -7,21 +7,26 @@ import { AssertionError } from "assert";
 export function runMarkdownSnippet() {
   // get editor
   const editor = vscode.window.activeTextEditor;
+  if (editor === undefined) {
+    vscode.window.showErrorMessage("Editor not found.");
+    return;
+  }
 
   // get selection
-  const selection = editor !== undefined ? editor.selection : undefined;
-  if (editor === undefined || selection === undefined || selection.isEmpty) {
+  const selection = editor.selection;
+  if (selection === undefined || selection.isEmpty) {
     vscode.window.showErrorMessage("No code selected.");
     return;
   }
 
+  // handle selection
   // get snippet
   const selectedText = editor.document.getText(selection);
   const eol = getEol(editor.document.eol);
 
-  const content = Content.parseSelectedText(eol, selectedText);
+  const content = SelectedContent.parseSelectedText(eol, selectedText);
   if (isString(content)) {
-    /* if error */ // if string is returned, this represents an error message.
+    // if string is returned, this represents an error message.
     vscode.window.showErrorMessage(content);
     return;
   }
@@ -92,11 +97,11 @@ class FinalizedContent {
   public static finalize(
     cfg: vscode.WorkspaceConfiguration,
     eol: string,
-    content: Content
+    content: SelectedContent
   ): FinalizedContent {
     const mdType = content.mdType;
     let vscodeType = FinalizedContent.mdToVscodeFiletype(cfg, content);
-    const rawSnippet = content.rawSnippet;
+    const rawSnippet = content.snippet;
     const fullSnippet = FinalizedContent.applyTemplate(cfg, content).replace(
       /\n/g,
       eol
@@ -112,7 +117,7 @@ class FinalizedContent {
 
   private static mdToVscodeFiletype(
     cfg: vscode.WorkspaceConfiguration,
-    content: Content
+    content: SelectedContent
   ): string | undefined {
     const mdToVscodeTypeMap = cfg.get<any>("mdToVscodeTypeMap");
     return mdToVscodeTypeMap[content.mdType];
@@ -120,12 +125,12 @@ class FinalizedContent {
 
   private static applyTemplate(
     cfg: vscode.WorkspaceConfiguration,
-    content: Content
+    content: SelectedContent
   ): string {
     const mdTypeToTemplateMap = cfg.get<any>("mdTypeToTemplateMap");
     let template = mdTypeToTemplateMap[content.mdType];
     if (template === undefined) {
-      return content.rawSnippet;
+      return content.snippet;
     }
 
     // detect the depth of indentation
@@ -142,7 +147,7 @@ class FinalizedContent {
 
     // insert indentation
     const indent = indentMatch[1];
-    const splitted_rawSnippet = content.rawSnippet.split("\n");
+    const splitted_rawSnippet = content.snippet.split("\n");
     const indentedSnippet = splitted_rawSnippet
       .map(line => {
         return indent + line;
@@ -152,79 +157,87 @@ class FinalizedContent {
   }
 }
 
-class Content {
-  public mdType: string;
-  public rawSnippet: string;
-
-  constructor(mdType: string, rawSnippet: string) {
-    this.mdType = mdType;
-    this.rawSnippet = rawSnippet;
-  }
+class SelectedContent {
+  private constructor(
+    public readonly mdType: string,
+    public readonly snippet: string
+  ) {}
 
   static parseSelectedText(
     eol: string,
     selectedText: string
-  ): Content | string {
-    // preserve indentation
-    const indentMatch = /^(\ *)```/.exec(selectedText);
+  ): SelectedContent | string {
+    // Get the indent of the line containing the beginning marker (```). It
+    // should be removed before running because the indent there is rather
+    // indent for markdown's structure than code's.
+    const indent = getMarkdownIndent(selectedText);
 
     selectedText = selectedText.trim();
+
+    // Check if markers exist
     if (!selectedText.startsWith("```") || !selectedText.endsWith("```")) {
       return "Selection is not started with ``` or is not ended with ```";
     }
 
-    if (indentMatch === null) {
+    // Remove markers
+    selectedText = selectedText.replace(/^```/, "").replace(/```$/, "");
+
+    const lines = selectedText.split(eol);
+
+    // Remove the last line: that should be an empty line.
+    const lastline = lines.pop();
+    if (lastline === undefined) {
+      // It never occurs, since even splitting empty string "" results array
+      // containing one empty string [""].
       throw new AssertionError({
-        message: "indentMatch is null"
+        message: "Lines should have at least one element."
       });
     }
 
-    // indent
-    const indent = indentMatch[1];
+    // If lastline is not an empty, it means there is no EOL before the end
+    // marker of snippet.
+    if (lastline.trim() !== "") {
+      return "No newline before the end marker of snippet.";
+    }
 
-    // remove markers
-    selectedText = selectedText.replace(/^```/, "").replace(/```$/, "");
-
-    let splitted_selectedText = selectedText.split(eol);
-
-    // modify snippet: remove the last line: normally that is empty line.
-    let lastline = splitted_selectedText.pop();
-
-    // when there isn't even filetype line, lastline will be undefined.
-    // splitted_snippet must contain snippet body other than type, so it is
-    // needed to have more than 1 element.
-
-    if (
-      // even filetype is not present --- just blank, or
-      lastline === undefined ||
-      // there is filetype but no body, or
-      splitted_selectedText.length === 0 ||
-      // there is filetype but no line except trailing empty line
-      (lastline.trim() === "" && splitted_selectedText.length === 1)
-    ) {
-      // then selected snippet doesn't contain any code to run.
+    //
+    // now lines should be like below:
+    //
+    // {language}
+    // ..snippets..
+    //
+    // so there should be at least one element to get language.
+    //
+    if (lines.length === 0) {
+      return "No filetype is specified.";
+    } else if (lines.length === 1) {
       return "No code to run.";
     }
 
-    // if the last line is not empty, push it again.
-    if (lastline.trim() !== "") {
-      splitted_selectedText.push(lastline);
-    }
-
-    // parse filetype specified at just after the beginning marker
-    let mdType = splitted_selectedText[0];
+    // Parse filetype specified at just after the beginning marker
+    const mdType = lines[0];
     if (mdType === "") {
       return "No filetype detected.";
     }
 
-    let rawSnippet = splitted_selectedText
+    // Remove markdown's structural indents.
+    const snippet = lines
       .slice(1)
-      .map(line => {
-        // remove indent
-        return line.replace(new RegExp("^" + indent), "");
-      })
+      .map(line => line.replace(RegExp("^" + indent), ""))
       .join("\n");
 
-    return new Content(mdType, rawSnippet);
+    return new SelectedContent(mdType, snippet);
   }
+}
+
+function getMarkdownIndent(text: string): string {
+  const indentMatch = /^(\s*)```/.exec(text);
+
+  if (indentMatch === null) {
+    throw new AssertionError({
+      message: "indentMatch is null"
+    });
+  }
+
+  return indentMatch[1];
 }
