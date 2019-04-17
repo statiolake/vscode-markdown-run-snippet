@@ -1,7 +1,6 @@
 "use strict";
 
 import * as vscode from "vscode";
-import { isString } from "util";
 import { AssertionError } from "assert";
 
 export function runMarkdownSnippet() {
@@ -19,19 +18,18 @@ export function runMarkdownSnippet() {
     return;
   }
 
-  // handle selection
   // get snippet
   const selectedText = editor.document.getText(selection);
   const eol = getEol(editor.document.eol);
 
   const content = SelectedContent.parseSelectedText(eol, selectedText);
-  if (isString(content)) {
+  if (typeof content === "string") {
     // if string is returned, this represents an error message.
     vscode.window.showErrorMessage(content);
     return;
   }
 
-  // get current active file's uri
+  // Get current active file's uri
   // unsupported: if not a file, show error message and exit
   const uri = editor.document.uri;
   if (uri === undefined || uri.scheme !== "file") {
@@ -41,12 +39,11 @@ export function runMarkdownSnippet() {
     return;
   }
 
-  // get configuration
+  // Get configuration
   const config = vscode.workspace.getConfiguration("markdown-run-snippet");
-  const finalized = FinalizedContent.finalize(config, eol, content);
+  const finalized = content.toSnippet(config, eol);
 
-  // open it in window as Untitled new file
-  // and run it.
+  // Open it in window as Untitled new file and run it.
   vscode.workspace
     .openTextDocument({
       language: finalized.vscodeType,
@@ -76,85 +73,13 @@ function getEol(eeol: vscode.EndOfLine): string {
   return eol;
 }
 
-class FinalizedContent {
-  public mdType: string;
-  public vscodeType: string;
-  public rawSnippet: string;
-  public fullSnippet: string;
-
+class Snippet {
   constructor(
-    mdType: string,
-    vscodeType: string,
-    rawSnippet: string,
-    fullSnippet: string
-  ) {
-    this.mdType = mdType;
-    this.vscodeType = vscodeType;
-    this.rawSnippet = rawSnippet;
-    this.fullSnippet = fullSnippet;
-  }
-
-  public static finalize(
-    cfg: vscode.WorkspaceConfiguration,
-    eol: string,
-    content: SelectedContent
-  ): FinalizedContent {
-    const mdType = content.mdType;
-    let vscodeType = FinalizedContent.mdToVscodeFiletype(cfg, content);
-    const rawSnippet = content.snippet;
-    const fullSnippet = FinalizedContent.applyTemplate(cfg, content).replace(
-      /\n/g,
-      eol
-    );
-
-    // fallback: unregistered mdType
-    if (vscodeType === undefined) {
-      vscodeType = content.mdType;
-    }
-
-    return new FinalizedContent(mdType, vscodeType, rawSnippet, fullSnippet);
-  }
-
-  private static mdToVscodeFiletype(
-    cfg: vscode.WorkspaceConfiguration,
-    content: SelectedContent
-  ): string | undefined {
-    const mdToVscodeTypeMap = cfg.get<any>("mdToVscodeTypeMap");
-    return mdToVscodeTypeMap[content.mdType];
-  }
-
-  private static applyTemplate(
-    cfg: vscode.WorkspaceConfiguration,
-    content: SelectedContent
-  ): string {
-    const mdTypeToTemplateMap = cfg.get<any>("mdTypeToTemplateMap");
-    let template = mdTypeToTemplateMap[content.mdType];
-    if (template === undefined) {
-      return content.snippet;
-    }
-
-    // detect the depth of indentation
-    // The template may contain more than one `$snippet`, but the depth of
-    // indentation is based on the first occurrence.
-    const indentMatch = /^(\ *)\$snippet/m.exec(template);
-    if (indentMatch === null) {
-      // nothing to replace.
-      return template;
-    }
-
-    // remove indent from template
-    template = template.replace(/^\ *\$snippet/m, "$snippet");
-
-    // insert indentation
-    const indent = indentMatch[1];
-    const splitted_rawSnippet = content.snippet.split("\n");
-    const indentedSnippet = splitted_rawSnippet
-      .map(line => {
-        return indent + line;
-      })
-      .join("\n");
-    return template.replace(/\$snippet/, indentedSnippet);
-  }
+    public readonly mdType: string,
+    public readonly vscodeType: string,
+    public readonly rawSnippet: string,
+    public readonly fullSnippet: string
+  ) {}
 }
 
 class SelectedContent {
@@ -228,6 +153,19 @@ class SelectedContent {
 
     return new SelectedContent(mdType, snippet);
   }
+
+  public toSnippet(cfg: vscode.WorkspaceConfiguration, eol: string): Snippet {
+    const mdType = this.mdType;
+    const maybeVscodeType = mdToVscodeFiletype(cfg, this);
+    const snippet = this.snippet;
+    const fullSnippet = applyTemplate(cfg, this).replace(/\n/g, eol);
+
+    // fallback: unregistered mdType
+    const vscodeType =
+      maybeVscodeType !== undefined ? maybeVscodeType : this.mdType;
+
+    return new Snippet(mdType, vscodeType, snippet, fullSnippet);
+  }
 }
 
 function getMarkdownIndent(text: string): string {
@@ -240,4 +178,45 @@ function getMarkdownIndent(text: string): string {
   }
 
   return indentMatch[1];
+}
+
+function mdToVscodeFiletype(
+  cfg: vscode.WorkspaceConfiguration,
+  content: SelectedContent
+): string | undefined {
+  const mdToVscodeTypeMap = cfg.get<any>("mdToVscodeTypeMap");
+  return mdToVscodeTypeMap[content.mdType];
+}
+
+function applyTemplate(
+  cfg: vscode.WorkspaceConfiguration,
+  content: SelectedContent
+): string {
+  const mdTypeToTemplateMap = cfg.get<any>("mdTypeToTemplateMap");
+  let template = mdTypeToTemplateMap[content.mdType];
+  if (template === undefined) {
+    return content.snippet;
+  }
+
+  // detect the depth of indentation
+  // The template may contain more than one `$snippet`, but the depth of
+  // indentation is based on the first occurrence.
+  const indentMatch = /^(\ *)\$snippet/m.exec(template);
+  if (indentMatch === null) {
+    // nothing to replace.
+    return template;
+  }
+
+  // remove indent from template
+  template = template.replace(/^\ *\$snippet/m, "$snippet");
+
+  // insert indentation
+  const indent = indentMatch[1];
+  const splitted_rawSnippet = content.snippet.split("\n");
+  const indentedSnippet = splitted_rawSnippet
+    .map(line => {
+      return indent + line;
+    })
+    .join("\n");
+  return template.replace(/\$snippet/, indentedSnippet);
 }
