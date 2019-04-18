@@ -12,48 +12,51 @@ export function runMarkdownSnippet() {
   }
 
   // get selection
-  const selection = editor.selection;
-  if (selection === undefined || selection.isEmpty) {
-    vscode.window.showErrorMessage("No code selected.");
-    return;
-  }
+  const selections = editor.selections;
+  for (const selection of selections) {
+    if (selection === undefined || selection.isEmpty) {
+      vscode.window.showErrorMessage("No code selected.");
+      return;
+    }
 
-  // get snippet
-  const selectedText = editor.document.getText(selection);
-  const eol = getEol(editor.document.eol);
+    // get snippet
+    const selectedText = editor.document.getText(selection);
+    const eol = getEol(editor.document.eol);
 
-  const content = SelectedContent.parseSelectedText(eol, selectedText);
-  if (typeof content === "string") {
-    // if string is returned, this represents an error message.
-    vscode.window.showErrorMessage(content);
-    return;
-  }
+    const content = SelectedContent.parseSelectedText(eol, selectedText);
+    if (typeof content === "string") {
+      // if string is returned, this represents an error message.
+      vscode.window.showErrorMessage(content);
+      return;
+    }
 
-  // Get current active file's uri
-  // unsupported: if not a file, show error message and exit
-  const uri = editor.document.uri;
-  if (uri === undefined || uri.scheme !== "file") {
-    vscode.window.showErrorMessage(
-      "Opened file is not placed at the local filesystem."
-    );
-    return;
-  }
+    // Get current active file's uri
+    // unsupported: if not a file, show error message and exit
+    // const uri = editor.document.uri;
+    // if (uri === undefined || uri.scheme !== "file") {
+    //   vscode.window.showErrorMessage(
+    //     "Opened file is not placed at the local filesystem."
+    //   );
+    //   return;
+    // }
 
-  // Get configuration
-  const config = vscode.workspace.getConfiguration("markdown-run-snippet");
-  const finalized = content.toSnippet(config, eol);
+    // Get configuration
+    const config = vscode.workspace.getConfiguration("markdown-run-snippet");
+    const snippet = content.toSnippet(config, eol);
 
-  // Open it in window as Untitled new file and run it.
-  vscode.workspace
-    .openTextDocument({
-      language: finalized.vscodeType,
-      content: finalized.fullSnippet
-    })
-    .then(doc => {
-      vscode.window.showTextDocument(doc).then(() => {
-        vscode.commands.executeCommand("code-runner.run");
+    // Open it in window as Untitled new file and run it.
+    vscode.workspace
+      .openTextDocument({
+        language: snippet.vscodeType,
+        content: snippet.fullSnippet
+      })
+      .then(doc => vscode.window.showTextDocument(doc, { preview: false }))
+      .then(() => {
+        if (selections.length === 1) {
+          return vscode.commands.executeCommand("code-runner.run");
+        }
       });
-    });
+  }
 }
 
 function getEol(eeol: vscode.EndOfLine): string {
