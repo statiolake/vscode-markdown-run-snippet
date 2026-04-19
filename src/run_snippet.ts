@@ -3,7 +3,7 @@
 import * as vscode from "vscode";
 import { AssertionError } from "assert";
 
-export function runMarkdownSnippet() {
+export function runMarkdownSnippet(range?: vscode.Range) {
   // get editor
   const editor = vscode.window.activeTextEditor;
   if (editor === undefined) {
@@ -11,16 +11,19 @@ export function runMarkdownSnippet() {
     return;
   }
 
-  // get selection
-  const selections = editor.selections;
-  for (const selection of selections) {
-    if (selection === undefined || selection.isEmpty) {
+  // If a range is supplied (e.g. from CodeLens), use it as the single target.
+  // Otherwise fall back to the editor's multi-selection behavior.
+  const ranges: readonly vscode.Range[] =
+    range !== undefined ? [range] : editor.selections;
+
+  for (const r of ranges) {
+    if (r === undefined || r.isEmpty) {
       vscode.window.showErrorMessage("No code selected.");
       return;
     }
 
     // get snippet
-    const selectedText = editor.document.getText(selection);
+    const selectedText = editor.document.getText(r);
     const eol = getEol(editor.document.eol);
 
     const content = SelectedContent.parseSelectedText(eol, selectedText);
@@ -52,7 +55,7 @@ export function runMarkdownSnippet() {
       })
       .then(doc => vscode.window.showTextDocument(doc, { preview: false }))
       .then(() => {
-        if (selections.length === 1) {
+        if (ranges.length === 1) {
           return vscode.commands.executeCommand("code-runner.run");
         }
       });

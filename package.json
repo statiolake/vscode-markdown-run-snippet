@@ -1,72 +1,72 @@
 {
-    "name": "vscode-markdown-run-snippet",
-    "displayName": "Run Snippets in Markdown",
-    "description": "Run code block inside your markdown file",
-    "version": "0.2.0",
-    "publisher": "statiolake",
-    "engines": {
-        "vscode": "^1.21.0"
-    },
-    "categories": [
-        "Other"
+  "name": "vscode-markdown-run-snippet",
+  "displayName": "Run Snippets in Markdown",
+  "description": "Run code block inside your markdown file",
+  "version": "0.2.0",
+  "publisher": "statiolake",
+  "engines": {
+    "vscode": "^1.21.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "markdown"
+  ],
+  "bugs": {
+    "url": "https://github.com/statiolake/vscode-markdown-run-snippet/issues",
+    "email": "statiolake@gmail.com"
+  },
+  "homepage": "https://github.com/statiolake/vscode-markdown-run-snippet/blob/master/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/statiolake/vscode-markdown-run-snippet.git"
+  },
+  "activationEvents": [
+    "onCommand:extension.runMarkdownSnippet",
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.runMarkdownSnippet",
+        "title": "Run Snippet in Markdown",
+        "category": "Markdown"
+      }
     ],
-    "keywords": [
-        "markdown"
-    ],
-    "bugs": {
-        "url": "https://github.com/statiolake/vscode-markdown-run-snippet/issues",
-        "email": "statiolake@gmail.com"
-    },
-    "homepage": "https://github.com/statiolake/vscode-markdown-run-snippet/blob/master/README.md",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/statiolake/vscode-markdown-run-snippet.git"
-    },
-    "activationEvents": [
-        "onCommand:extension.runMarkdownSnippet"
-    ],
-    "main": "./out/extension",
-    "contributes": {
-        "commands": [
-            {
-                "command": "extension.runMarkdownSnippet",
-                "title": "Run Snippet in Markdown",
-                "category": "Markdown"
-            }
-        ],
-        "configuration": {
-            "title": "Markdown Run Snippet Configuration",
-            "properties": {
-                "markdown-run-snippet.mdToVscodeTypeMap": {
-                    "type": "object",
-                    "default": {
-                        "c++": "cpp"
-                    }
-                },
-                "markdown-run-snippet.mdTypeToTemplateMap": {
-                    "type": "object",
-                    "default": {
-                        "rust": "fn main() {\n    $snippet\n}"
-                    }
-                }
-            }
+    "configuration": {
+      "title": "Markdown Run Snippet Configuration",
+      "properties": {
+        "markdown-run-snippet.mdToVscodeTypeMap": {
+          "type": "object",
+          "default": {
+            "c++": "cpp"
+          }
+        },
+        "markdown-run-snippet.mdTypeToTemplateMap": {
+          "type": "object",
+          "default": {
+            "rust": "fn main() {\n    $snippet\n}"
+          }
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
-    },
-    "devDependencies": {
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.6",
-        "tslint": "^5.8.0",
-        "@types/node": "^7.0.43",
-        "@types/mocha": "^2.2.42"
-    },
-    "extensionDependencies": [
-        "formulahendry.code-runner"
-    ]
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.4.0",
+    "typescript": "^5.0.0"
+  },
+  "extensionDependencies": [
+    "formulahendry.code-runner"
+  ]
 }

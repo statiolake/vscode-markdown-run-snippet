@@ -3,26 +3,27 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as runSnippet from "./run_snippet";
+import { MarkdownRunCodeLensProvider } from "./code_lens_provider";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  // console.log('Congratulations, your extension "vscode-markdown-run-snippet" is now active!');
-
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with  registerCommand
   // The commandId parameter must match the command field in package.json
-  let disposable = vscode.commands.registerCommand(
+  const runCommand = vscode.commands.registerCommand(
     "extension.runMarkdownSnippet",
-    () => {
-      // The code you place here will be executed every time your command is executed
-      runSnippet.runMarkdownSnippet();
+    (range?: vscode.Range) => {
+      runSnippet.runMarkdownSnippet(range);
     }
   );
 
-  context.subscriptions.push(disposable);
+  const codeLens = vscode.languages.registerCodeLensProvider(
+    { language: "markdown" },
+    new MarkdownRunCodeLensProvider()
+  );
+
+  context.subscriptions.push(runCommand, codeLens);
 }
 
 // this method is called when your extension is deactivated
