@@ -63,13 +63,16 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node ./out/test/runTest.js"
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.0",
     "@types/node": "^20.0.0",
-    "@types/vscode": "^1.90.0",
+    "@types/vscode": "^1.21.0",
     "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^3.9.1",
     "typescript": "^5.0.0"
   },
   "extensionDependencies": [
