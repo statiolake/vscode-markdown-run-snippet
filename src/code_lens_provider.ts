@@ -17,6 +17,7 @@ export class MarkdownRunCodeLensProvider implements vscode.CodeLensProvider {
     let inFence = false;
     let fenceStart = -1;
     let fenceIndent = "";
+    let fenceLang = "";
 
     for (let i = 0; i < lineCount; i++) {
       const line = document.lineAt(i).text;
@@ -31,6 +32,7 @@ export class MarkdownRunCodeLensProvider implements vscode.CodeLensProvider {
         inFence = true;
         fenceStart = i;
         fenceIndent = indent;
+        fenceLang = lang;
       } else {
         // Require closing fence to share the opening fence's indent so that
         // nested fences (e.g. inside indented code examples) don't terminate.
@@ -42,6 +44,13 @@ export class MarkdownRunCodeLensProvider implements vscode.CodeLensProvider {
             title: "$(play) Run",
             command: "extension.runMarkdownSnippet",
             arguments: [range]
+          })
+        );
+        lenses.push(
+          new vscode.CodeLens(range, {
+            title: "$(edit) Edit",
+            command: "extension.editMarkdownSnippet",
+            arguments: [document.uri, range, fenceLang]
           })
         );
         inFence = false;

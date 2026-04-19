@@ -3,8 +3,7 @@
 import * as vscode from "vscode";
 import { AssertionError } from "assert";
 
-export function runMarkdownSnippet(range?: vscode.Range) {
-  // get editor
+export async function runMarkdownSnippet(range?: vscode.Range): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (editor === undefined) {
     vscode.window.showErrorMessage("Editor not found.");
@@ -22,43 +21,41 @@ export function runMarkdownSnippet(range?: vscode.Range) {
       return;
     }
 
-    // get snippet
     const selectedText = editor.document.getText(r);
     const eol = getEol(editor.document.eol);
 
     const content = SelectedContent.parseSelectedText(eol, selectedText);
     if (typeof content === "string") {
-      // if string is returned, this represents an error message.
       vscode.window.showErrorMessage(content);
       return;
     }
 
-    // Get current active file's uri
-    // unsupported: if not a file, show error message and exit
-    // const uri = editor.document.uri;
-    // if (uri === undefined || uri.scheme !== "file") {
-    //   vscode.window.showErrorMessage(
-    //     "Opened file is not placed at the local filesystem."
-    //   );
-    //   return;
-    // }
-
-    // Get configuration
     const config = vscode.workspace.getConfiguration("markdown-run-snippet");
     const snippet = content.toSnippet(config, eol);
 
-    // Open it in window as Untitled new file and run it.
-    vscode.workspace
-      .openTextDocument({
-        language: snippet.vscodeType,
-        content: snippet.fullSnippet
-      })
-      .then(doc => vscode.window.showTextDocument(doc, { preview: false }))
-      .then(() => {
-        if (ranges.length === 1) {
-          return vscode.commands.executeCommand("code-runner.run");
-        }
-      });
+    // Open the expanded snippet as a preview tab so that a subsequent run
+    // replaces the previous one. For a single target, we run via code-runner
+    // and then close the preview tab — by the time code-runner.run's promise
+    // resolves, the child process has been spawned with a captured temp file,
+    // so closing the tab does not affect it.
+    const doc = await vscode.workspace.openTextDocument({
+      language: snippet.vscodeType,
+      content: snippet.fullSnippet
+    });
+    const preview = ranges.length === 1;
+    await vscode.window.showTextDocument(doc, { preview });
+
+    if (ranges.length === 1) {
+      await vscode.commands.executeCommand("code-runner.run");
+      // The untitled doc is dirty (it was created with non-empty content), so
+      // a plain close would pop the "save?" dialog. Revert first to drop the
+      // dirty state, then close. code-runner.run has already spawned its child
+      // process by the time its promise resolves, so losing the buffer does
+      // not affect the run.
+      await vscode.commands.executeCommand(
+        "workbench.action.revertAndCloseActiveEditor"
+      );
+    }
   }
 }
 

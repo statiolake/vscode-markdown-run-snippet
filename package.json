@@ -24,6 +24,7 @@
   },
   "activationEvents": [
     "onCommand:extension.runMarkdownSnippet",
+    "onCommand:extension.editMarkdownSnippet",
     "onLanguage:markdown"
   ],
   "main": "./out/extension",
@@ -32,6 +33,11 @@
       {
         "command": "extension.runMarkdownSnippet",
         "title": "Run Snippet in Markdown",
+        "category": "Markdown"
+      },
+      {
+        "command": "extension.editMarkdownSnippet",
+        "title": "Edit Snippet in Markdown",
         "category": "Markdown"
       }
     ],
