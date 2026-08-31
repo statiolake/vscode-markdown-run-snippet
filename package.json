@@ -2,8 +2,9 @@
   "name": "vscode-markdown-run-snippet",
   "displayName": "Run Snippets in Markdown",
   "description": "Run code block inside your markdown file",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "statiolake",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.21.0"
   },
@@ -65,14 +66,18 @@
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node ./out/test/runTest.js",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "npm run publish:vsce && npm run publish:ovsx",
+    "publish:vsce": "vsce publish",
+    "publish:ovsx": "ovsx publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.0",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.21.0",
-    "@vscode/test-electron": "^2.4.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.1",
+    "mocha": "^11.7.6",
+    "ovsx": "^1.1.1",
     "typescript": "^5.0.0"
   },
   "extensionDependencies": [

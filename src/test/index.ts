@@ -1,34 +1,36 @@
-//
-// PLEASE DO NOT MODIFY / DELETE UNLESS YOU KNOW WHAT YOU ARE DOING
-//
-// This file is providing the test runner to use when running extension tests.
-// By default the test runner in use is Mocha based.
-//
-// You can provide your own test runner if you want to override it by exporting
-// a function run(testRoot: string, clb: (error:Error) => void) that the extension
-// host can call to run the tests. The test runner is expected to use console.log
-// to report the results back to the caller. When the tests are finished, return
-// a possible error to the callback or null if none.
-
-import { runTests } from "@vscode/test-electron";
+import * as fs from "fs";
+import * as Mocha from "mocha";
 import * as path from "path";
 
-async function main() {
-  try {
-    // The folder containing the Extension Manifest package.json
-    // Passed to `--extensionDevelopmentPath`
-    const extensionDevelopmentPath = path.resolve(__dirname, "../../");
+export function run(): Promise<void> {
+  const mocha = new Mocha({
+    color: true,
+    ui: "tdd",
+  });
+  const testsRoot = path.resolve(__dirname);
 
-    // The path to the test runner
-    // Passed to `--extensionTestsPath`
-    const extensionTestsPath = path.resolve(__dirname, "./index");
+  return new Promise((resolve, reject) => {
+    fs.readdir(testsRoot, (error, files) => {
+      if (error) {
+        reject(error);
+        return;
+      }
 
-    // Download VS Code, unzip it and run the integration test
-    await runTests({ extensionDevelopmentPath, extensionTestsPath });
-  } catch (err) {
-    console.error("Failed to run tests");
-    process.exit(1);
-  }
+      files
+        .filter((file) => file.endsWith(".test.js"))
+        .forEach((file) => mocha.addFile(path.resolve(testsRoot, file)));
+
+      try {
+        mocha.run((failures) => {
+          if (failures > 0) {
+            reject(new Error(`${failures} test(s) failed.`));
+          } else {
+            resolve();
+          }
+        });
+      } catch (runError) {
+        reject(runError);
+      }
+    });
+  });
 }
-
-main();
